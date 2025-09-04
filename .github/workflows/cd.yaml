@@ -1,0 +1,38 @@
+name: CD - Deploy Frontend React App
+
+on:
+  workflow_run:
+    workflows: ["CI - Frontend React App"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: [self-hosted]   # Your self-hosted runner
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      # 1️⃣ Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2️⃣ (Optional) Set up kubectl if not pre-installed
+      - name: Set up kubectl
+        if: ! command -v kubectl &> /dev/null
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      # 3️⃣ Apply all Kubernetes manifests
+      - name: Apply Kubernetes Manifests
+        run: |
+          kubectl apply -f kubernetes/
+
+      # 4️⃣ Wait for all deployments to roll out
+      - name: Wait for Deployment Rollout
+        run: |
+          for deployment in $(kubectl get deployments -o jsonpath='{.items[*].metadata.name}'); do
+            kubectl rollout status deployment/$deployment
+          done

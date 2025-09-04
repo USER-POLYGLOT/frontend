@@ -1,9 +1,10 @@
 name: CD - Frontend Microservice
 
 on:
-  workflow_dispatch:           # manual trigger
-  push:
-    branches: [ "main" ]      # optional automatic trigger after CI
+  workflow_run:
+    workflows: ["CI - Frontend React App"]  # Run after CI workflow completes
+    types:
+      - completed
 
 jobs:
   # Job 1: Docker image handling
@@ -11,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest     # GitHub-hosted runner
     outputs:
       image-tag: ${{ steps.set-tag.outputs.tag }}
+
     steps:
       # 1️⃣ Checkout the repo
       - name: Checkout Repo
@@ -41,22 +43,22 @@ jobs:
 
   # Job 2: Deploy to Kubernetes
   deploy:
-    runs-on: self-hosted        # self-hosted runner
+    runs-on: self-hosted        # self-hosted runner with kubectl configured
     needs: docker               # wait for Docker job to complete
     env:
       IMAGE_TAG: ${{ needs.docker.outputs.image-tag }}
+
     steps:
-      # 1️⃣ Checkout repo (optional)
+      # 1️⃣ Checkout repo (optional, for manifests)
       - name: Checkout Repo
         uses: actions/checkout@v4
 
       # 2️⃣ Update the Kubernetes Deployment with the new image
       - name: Update Frontend Deployment
         run: |
-          kubectl set image deployment/frontend \
-            frontend=anubhav1404/user-frontend:${IMAGE_TAG} \
-            --record
+          kubectl set image deployment/frontend-deployment \
+            frontend=anubhav1404/user-frontend:${IMAGE_TAG}
 
       # 3️⃣ Wait for rollout to complete
       - name: Wait for Frontend Rollout
-        run: kubectl rollout status deployment/frontend
+        run: kubectl rollout status deployment/frontend-deployment

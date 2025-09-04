@@ -6,15 +6,13 @@ on:
     branches: [ "main" ]      # optional automatic trigger after CI
 
 jobs:
-  deploy:
-    runs-on: self-hosted       # your self-hosted runner
-
-    env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
+  # Job 1: Docker image handling
+  docker:
+    runs-on: ubuntu-latest     # GitHub-hosted runner
+    outputs:
+      image-tag: ${{ steps.set-tag.outputs.tag }}
     steps:
-      # 1️⃣ Checkout the repo (optional if you only need kubectl)
+      # 1️⃣ Checkout the repo
       - name: Checkout Repo
         uses: actions/checkout@v4
 
@@ -25,17 +23,40 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3️⃣ Pull the Docker image for SHA tag (optional)
-      - name: Pull Docker Image
-        run: docker pull anubhav1404/user-frontend:${{ github.sha }}
+      # 3️⃣ Set image tag to Git SHA
+      - name: Set Image Tag
+        id: set-tag
+        run: echo "tag=${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
-      # 4️⃣ Update the Kubernetes Deployment with SHA image
+      # 4️⃣ Build & Push Docker Image
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            anubhav1404/user-frontend:latest
+            anubhav1404/user-frontend:${{ github.sha }}
+
+  # Job 2: Deploy to Kubernetes
+  deploy:
+    runs-on: self-hosted        # self-hosted runner
+    needs: docker               # wait for Docker job to complete
+    env:
+      IMAGE_TAG: ${{ needs.docker.outputs.image-tag }}
+    steps:
+      # 1️⃣ Checkout repo (optional)
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      # 2️⃣ Update the Kubernetes Deployment with the new image
       - name: Update Frontend Deployment
         run: |
           kubectl set image deployment/frontend \
-            frontend=anubhav1404/user-frontend:${{ github.sha }} \
+            frontend=anubhav1404/user-frontend:${IMAGE_TAG} \
             --record
 
-      # 5️⃣ Wait for rollout to complete
+      # 3️⃣ Wait for rollout to complete
       - name: Wait for Frontend Rollout
         run: kubectl rollout status deployment/frontend

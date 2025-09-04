@@ -1,0 +1,41 @@
+name: CD - Frontend Microservice
+
+on:
+  workflow_dispatch:           # manual trigger
+  push:
+    branches: [ "main" ]      # optional automatic trigger after CI
+
+jobs:
+  deploy:
+    runs-on: self-hosted       # your self-hosted runner
+
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    steps:
+      # 1️⃣ Checkout the repo (optional if you only need kubectl)
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      # 2️⃣ Log in to Docker Hub
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3️⃣ Pull the Docker image for SHA tag (optional)
+      - name: Pull Docker Image
+        run: docker pull anubhav1404/user-frontend:${{ github.sha }}
+
+      # 4️⃣ Update the Kubernetes Deployment with SHA image
+      - name: Update Frontend Deployment
+        run: |
+          kubectl set image deployment/frontend \
+            frontend=anubhav1404/user-frontend:${{ github.sha }} \
+            --record
+
+      # 5️⃣ Wait for rollout to complete
+      - name: Wait for Frontend Rollout
+        run: kubectl rollout status deployment/frontend

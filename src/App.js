@@ -457,7 +457,7 @@ const UserManagementApp = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [loadUsers]);
+  }, []);
 
   useEffect(() => {
     const filtered = users.filter(user =>

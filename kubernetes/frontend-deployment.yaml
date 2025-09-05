@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: anubhav1404/user-frontend:9da3de24eddb332bb58c160276c7e078250dbaae
+        image: anubhav1404/user-frontend:da2431a527ca5ae1b5052703ecaec4866070b618
         ports:
         - containerPort: 80
         command: ["nginx", "-g", "daemon off;"]

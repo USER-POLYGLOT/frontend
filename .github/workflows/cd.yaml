@@ -22,12 +22,12 @@ jobs:
       # Apply all Kubernetes manifests in repo
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f kubernetes/
+          sudo -u ubuntu kubectl apply -f kubernetes/
 
       # Verify rollout of the frontend deployment only
       - name: Verify rollout
         run: |
-          kubectl rollout status deployment/frontend-deployment
+          sudo -u ubuntu kubectl rollout status deployment/frontend-deployment
 
     # - name: DAST (OWASP ZAP baseline)
     #   uses: zaproxy/action-baseline@v0.12.0

@@ -454,16 +454,9 @@ const UserManagementApp = () => {
       setLoading(false);
     }
   };
-  const loadUsers = useCallback(() => {
-    fetch("/api/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch((err) => console.error(err));
-  }, []);
-
   useEffect(() => {
     loadUsers();
-  }, [loadUsers]);
+  }, []);
 
   useEffect(() => {
     const filtered = users.filter(user =>

@@ -28,3 +28,9 @@ jobs:
       - name: Verify rollout
         run: |
           kubectl rollout status deployment/frontend-deployment
+
+    # - name: DAST (OWASP ZAP baseline)
+    #   uses: zaproxy/action-baseline@v0.12.0
+    #   with:
+    #     target: https://example.com
+    #   continue-on-error: true

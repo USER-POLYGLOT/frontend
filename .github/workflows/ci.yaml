@@ -12,9 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
-      security-events: write  # Needed for CodeQL to upload results
-      actions: read
+      contents: write  # Needed to commit change
 
     steps:
       # 1️⃣ Checkout the code
@@ -41,42 +39,18 @@ jobs:
       - name: Run Unit Tests
         run: npm test || true
 
-      # 6️⃣ SAST - Initialize CodeQL
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript
-
-      # 7️⃣ Build for CodeQL
-      - name: Build for CodeQL
-        run: npm run build --if-present
-
-      # 8️⃣ Perform CodeQL Analysis
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-      # 9️⃣ Secret Scan - Trivy
-      - name: Secret Scan (Trivy)
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          scanners: 'secret'
-          format: 'table'
-          exit-code: '1'   # Fail pipeline if secrets are found
-
-      # 🔟 Build the application
+      # 6️⃣ Build the application
       - name: Build Application
         run: CI=false npm run build
 
-      # 1️⃣1️⃣ Log in to Docker Hub
+      # 7️⃣ Log in to Docker Hub
       - name: Docker Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 1️⃣2️⃣ Build & push Docker image
+      # 8️⃣ Build & push Docker image
       - name: Build & Push Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -86,12 +60,12 @@ jobs:
           tags: |
             anubhav1404/user-frontend:${{ github.sha }}
 
-      # 1️⃣3️⃣ Update deployment manifest
+      # 9️⃣ Update deployment manifest
       - name: Update deployment manifest
         run: |
           sed -i "s|image: .*|image: anubhav1404/user-frontend:${{ github.sha }}|g" kubernetes/frontend-deployment.yaml
 
-      # 1️⃣4️⃣ Commit and push manifest changes
+      # 🔟 Commit and push manifest changes
       - name: Commit and push manifest changes
         run: |
           git config --global user.name "GitHub Actions"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Loader, Users, Edit, Trash2, Plus, Search, MessageSquare } from 'lucide-react';
 
 // Configuration for different environments
@@ -441,7 +441,7 @@ const UserManagementApp = () => {
 
   const userService = new UserService();
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = async () => {
     try {
       setLoading(true);
       setError('');
@@ -453,7 +453,7 @@ const UserManagementApp = () => {
     } finally {
       setLoading(false);
     }
-  },[]);
+  };
   useEffect(() => {
     loadUsers();
   }, []);
